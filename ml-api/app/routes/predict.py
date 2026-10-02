@@ -4,6 +4,7 @@ from typing import Literal
 
 import pandas as pd
 from fastapi import APIRouter
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 MODEL_PATH = Path(__file__).resolve().parents[2] / "model" / "model.pkl"
@@ -36,12 +37,6 @@ class PredictRequest(BaseModel):
     writing_score: int = Field(ge=0, le=100)
 
 
-class PredictResponse(BaseModel):
-    pass_math: int
-    probability: float
-    result: str
-
-
 def encode_row(payload: PredictRequest) -> pd.DataFrame:
     row = payload.model_dump()
     encoded = {}
@@ -53,14 +48,10 @@ def encode_row(payload: PredictRequest) -> pd.DataFrame:
     return pd.DataFrame([encoded], columns=features)
 
 
-@router.post("/predict", response_model=PredictResponse)
+@router.post("/predict", response_class=PlainTextResponse)
 def predict(payload: PredictRequest):
     frame = encode_row(payload)
     class_index = list(model.classes_).index(1)
     probability = float(model.predict_proba(frame)[0][class_index])
     passes = probability > PASS_THRESHOLD
-    return PredictResponse(
-        pass_math=1 if passes else 0,
-        probability=round(probability, 4),
-        result="aprueba" if passes else "reprueba",
-    )
+    return "pasa" if passes else "no pasa"

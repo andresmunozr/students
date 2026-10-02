@@ -47,25 +47,28 @@ document.getElementById('predict-form').addEventListener('submit', async (e) => 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
-    const data = await response.json().catch(() => null)
+    const body = await response.text()
 
     if (!response.ok) {
-      const detail = data && data.detail
-      const message = Array.isArray(detail)
-        ? detail.map(item => item.msg).filter(Boolean).join(' ')
-        : 'No se pudo obtener la predicción.'
-      panel.innerHTML = `<p class="predict-error">${escapeHtml(message || 'No se pudo obtener la predicción.')}</p>`
+      let message = 'No se pudo obtener la predicción.'
+      try {
+        const data = JSON.parse(body)
+        if (Array.isArray(data.detail)) {
+          const detail = data.detail.map(item => item.msg).filter(Boolean).join(' ')
+          if (detail) message = detail
+        }
+      } catch {
+        // La API de predicción responde en texto plano.
+      }
+      panel.innerHTML = `<p class="predict-error">${escapeHtml(message)}</p>`
       return
     }
 
-    const passed = data.result === 'aprueba'
-    const rawProbability = Number(data.probability)
-    const percentValue = rawProbability <= 1 ? rawProbability * 100 : rawProbability
-    const percent = percentValue.toFixed(1)
+    const result = body.trim()
+    const passed = result === 'pasa'
     panel.innerHTML = `
       <p class="predict-label">Resultado</p>
-      <span class="badge ${passed ? 'pass' : 'fail'}">${escapeHtml(data.result)}</span>
-      <p class="predict-probability">Probabilidad de aprobar: ${escapeHtml(percent)}%</p>
+      <span class="badge ${passed ? 'pass' : 'fail'}">${escapeHtml(result)}</span>
     `
   } catch {
     panel.innerHTML = '<p class="predict-error">No se pudo conectar con la API. Inténtalo de nuevo en unos segundos.</p>'

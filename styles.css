@@ -435,11 +435,6 @@ td[contenteditable="true"]:focus {
   padding: 8px 16px;
 }
 
-.predict-probability {
-  margin-top: 16px;
-  font-size: 1.05rem;
-}
-
 .predict-status {
   color: var(--muted);
 }
